@@ -1,1 +1,5 @@
 ffmpeg
+liblapack3
+libopenblas-base
+libgfortran5
+libatlas3-base
