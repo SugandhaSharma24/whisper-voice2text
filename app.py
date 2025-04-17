@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 import tempfile
 
+
 # Set page title and layout
 st.set_page_config(page_title="Whisper Voice2Text", layout="wide")
 
@@ -18,7 +19,7 @@ Upload an audio file (mp3, wav, mp4, etc.) and convert speech to text using Open
 @st.cache_resource
 def load_whisper_model():
     try:
-        model = whisper.load_model("base")  # Change to "small", "medium", or "large" for better accuracy
+        model = whisper.load_model("base", device="cpu")  # Change to "small", "medium", or "large" for better accuracy
         return model
     except Exception as e:
         st.error(f"Error loading model: {e}")

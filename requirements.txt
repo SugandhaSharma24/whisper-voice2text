@@ -1,7 +1,9 @@
-
-Copy
-streamlit
-openai-whisper
-torch
-python-magic
-ffmpeg-python
+# requirements.txt
+streamlit>=1.32.0
+openai-whisper==20231117
+torch==2.2.2
+python-magic==0.4.27
+ffmpeg-python==0.2.0
+markdown-it-py==2.2.0  # Older compatible version
+rich==13.7.1  # Older compatible version
+pip==24.0 
