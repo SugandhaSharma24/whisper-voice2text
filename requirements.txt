@@ -1,4 +1,6 @@
-streamlit
+sstreamlit
 openai-whisper
 torch
 python-magic
+ffmpeg-python  # Add this
+libmagic-dev   # Required for python-magic
