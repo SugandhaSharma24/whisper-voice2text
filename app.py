@@ -4,7 +4,8 @@ import whisper
 from datetime import datetime
 import os
 import tempfile
-
+import os
+os.environ["TORCH_CPP_LOG_LEVEL"] = "ERROR" 
 
 # Set page title and layout
 st.set_page_config(page_title="Whisper Voice2Text", layout="wide")

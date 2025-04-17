@@ -4,5 +4,4 @@ liblapack3
 libopenblas-base
 libgfortran5
 libatlas3-base
-build-essential
 python3-dev
