@@ -1,11 +1,14 @@
 # app.py
 import streamlit as st
 import whisper
-from datetime import datetime
+import torch
 import os
 import tempfile
-import os
-os.environ["TORCH_CPP_LOG_LEVEL"] = "ERROR" 
+import subprocess
+
+# Environment configuration
+os.environ["TORCH_CPP_LOG_LEVEL"] = "ERROR"
+os.environ["STREAMLIT_SERVER_HEADLESS"] = "true"
 
 # Set page title and layout
 st.set_page_config(page_title="Whisper Voice2Text", layout="wide")
@@ -20,7 +23,16 @@ Upload an audio file (mp3, wav, mp4, etc.) and convert speech to text using Open
 @st.cache_resource
 def load_whisper_model():
     try:
-        model = whisper.load_model("base", device="cpu")  # Change to "small", "medium", or "large" for better accuracy
+        # Verify FFmpeg installation
+        subprocess.run(['ffmpeg', '-version'], check=True, 
+                      stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        
+        # Load model with CPU optimization
+        model = whisper.load_model(
+            "base",
+            device="cpu",
+            download_root="/tmp/whisper_models"
+        )
         return model
     except Exception as e:
         st.error(f"Error loading model: {e}")
@@ -29,7 +41,7 @@ def load_whisper_model():
 # Function to save uploaded file temporarily
 def save_uploaded_file(uploaded_file):
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix="." + uploaded_file.name.split('.')[-1]) as tmp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
             tmp_file.write(uploaded_file.getvalue())
             return tmp_file.name
     except Exception as e:
@@ -39,6 +51,12 @@ def save_uploaded_file(uploaded_file):
 # Main function
 def main():
     model = load_whisper_model()
+    
+    # System info debug
+    with st.expander("System Information"):
+        st.write(f"PyTorch version: {torch.__version__}")
+        st.write(f"Whisper commit: {whisper.__version__}")
+        st.write(f"Device: {'GPU' if torch.cuda.is_available() else 'CPU'}")
     
     # File upload section
     uploaded_file = st.file_uploader(
@@ -53,30 +71,29 @@ def main():
         if st.button("Transcribe Audio"):
             with st.spinner("Transcribing... This might take a while..."):
                 try:
-                    # Save temp file
                     temp_file_path = save_uploaded_file(uploaded_file)
                     
-                    # Transcribe audio
-                    result = model.transcribe(temp_file_path)
+                    # Add progress bar
+                    progress_bar = st.progress(0)
+                    result = model.transcribe(temp_file_path, fp16=False)
+                    progress_bar.progress(100)
                     
                     # Display results
                     st.subheader("Transcription Result")
                     st.code(result["text"], language="txt")
                     
-                    # Show additional information
+                    # Detailed information
                     with st.expander("Show Detailed Information"):
-                        st.write("Segments:")
                         for segment in result["segments"]:
                             st.write(f"{segment['start']:.2f}s - {segment['end']:.2f}s: {segment['text']}")
-                        
-                        st.write("Full JSON Output:")
-                        st.json(result)
                     
-                    # Clean up temp file
+                    # Cleanup
                     os.unlink(temp_file_path)
                     
                 except Exception as e:
-                    st.error(f"Transcription failed: {e}")
+                    st.error(f"Transcription failed: {str(e)}")
+                    if "ffmpeg" in str(e).lower():
+                        st.error("FFmpeg not properly configured. Check packages.txt")
 
 # Run the app
 if __name__ == "__main__":

@@ -3,4 +3,3 @@ liblapack3
 libopenblas-base
 libgfortran5
 libatlas3-base
-python3-dev
