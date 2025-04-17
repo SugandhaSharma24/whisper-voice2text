@@ -3,3 +3,4 @@ openai-whisper
 torch
 python-magic
 ffmpeg-python
+audio_recorder_streamlit
