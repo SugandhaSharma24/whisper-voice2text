@@ -1,81 +1,63 @@
 # app.py
 import streamlit as st
 import whisper
-from datetime import datetime
-import os
 import tempfile
+import os
+from audio_recorder_streamlit import audio_recorder
 
-# Set page title and layout
+# Set page config
 st.set_page_config(page_title="Whisper Voice2Text", layout="wide")
 
-# Page header
 st.title("🎤 Whisper AI Voice to Text Converter")
 st.markdown("""
-Upload an audio file (mp3, wav, mp4, etc.) and convert speech to text using OpenAI's Whisper model.
+Convert speech to text using OpenAI's Whisper model. Choose either:
+1. 🗄️ Upload an audio file
+2. 🎤 Record live audio
 """)
 
-# Function to load Whisper model
 @st.cache_resource
 def load_whisper_model():
-    try:
-        model = whisper.load_model("base")  # Change to "small", "medium", or "large" for better accuracy
-        return model
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
-        return None
+    return whisper.load_model("base")
 
-# Function to save uploaded file temporarily
-def save_uploaded_file(uploaded_file):
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix="." + uploaded_file.name.split('.')[-1]) as tmp_file:
-            tmp_file.write(uploaded_file.getvalue())
-            return tmp_file.name
-    except Exception as e:
-        st.error(f"Error handling file: {e}")
-        return None
+def process_audio(file_path):
+    return load_whisper_model().transcribe(file_path)
 
-# Main function
 def main():
     model = load_whisper_model()
     
-    # File upload section
-    uploaded_file = st.file_uploader(
-        "Upload an audio file",
-        type=["mp3", "wav", "m4a", "mp4", "ogg", "flac"],
-        accept_multiple_files=False
-    )
+    col1, col2 = st.columns(2)
     
-    if uploaded_file is not None:
-        st.audio(uploaded_file, format='audio/wav')
-        
-        if st.button("Transcribe Audio"):
-            with st.spinner("Transcribing... This might take a while..."):
-                try:
-                    # Save temp file
-                    temp_file_path = save_uploaded_file(uploaded_file)
-                    
-                    # Transcribe audio
-                    result = model.transcribe(temp_file_path)
-                    
-                    # Display results
-                    st.subheader("Transcription Result")
-                    st.code(result["text"], language="txt")
-                    
-                    # Show additional information
-                    with st.expander("Show Detailed Information"):
-                        st.write("Segments:")
-                        for segment in result["segments"]:
-                            st.write(f"{segment['start']:.2f}s - {segment['end']:.2f}s: {segment['text']}")
-                        
-                        st.write("Full JSON Output:")
-                        st.json(result)
-                    
-                    # Clean up temp file
-                    os.unlink(temp_file_path)
-                    
-                except Exception as e:
-                    st.error(f"Transcription failed: {e}")
+    with col1:
+        st.subheader("File Upload")
+        uploaded_file = st.file_uploader("Choose audio", 
+                                       type=["mp3", "wav", "m4a", "mp4"],
+                                       accept_multiple_files=False)
+        if uploaded_file and st.button("Transcribe File"):
+            with tempfile.NamedTemporaryFile(suffix=uploaded_file.name) as tmp_file:
+                tmp_file.write(uploaded_file.getvalue())
+                result = process_audio(tmp_file.name)
+                show_results(result)
 
-# Run the app
+    with col2:
+        st.subheader("Live Recording")
+        audio_bytes = audio_recorder(text="Click to record", 
+                                  pause_threshold=5,
+                                  neutral_color="#6aa36f",
+                                  recording_color="#e34500")
+        
+        if audio_bytes and st.button("Transcribe Recording"):
+            with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_file:
+                tmp_file.write(audio_bytes)
+                result = process_audio(tmp_file.name)
+                show_results(result)
+
+def show_results(result):
+    if result:
+        st.subheader("Transcription")
+        st.write(result["text"])
+        with st.expander("Detailed Segments"):
+            for seg in result["segments"]:
+                st.write(f"{seg['start']:.1f}s - {seg['end']:.1f}s: {seg['text']}")
+
 if __name__ == "__main__":
     main()
