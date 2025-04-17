@@ -1,13 +1,15 @@
+# requirements.txt
 streamlit==1.32.2
 openai-whisper==20231117
 torch==2.2.2+cpu
 torchaudio==2.2.2+cpu
 python-magic==0.4.27
 ffmpeg-python==0.2.0
-rich==13.7.0  # Pinned before breaking changes
-markdown-it-py==2.2.0  # Compatible with Streamlit 1.32
+rich==13.7.0
+markdown-it-py==2.2.0
 Pygments==2.15.1
 mdurl==0.1.1
+pip==24.0  # Lock pip version
 
 --extra-index-url https://download.pytorch.org/whl/cpu
 --use-deprecated=legacy-resolver
